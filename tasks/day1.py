@@ -17,12 +17,10 @@ WORD2DIGIT = {
 
 
 def trebuchet2(inp, **_):
-    res = 0
+    results = []
     for line in inp:
-        # digits = _DIGITS_REXP.match(line).groups()[1:]
-        start = None
-        end = None
         last_word = ""
+        vals = []
         for s in line:
             v = None
             if s.isdigit():
@@ -32,24 +30,27 @@ def trebuchet2(inp, **_):
                 last_word += s
                 if last_word in WORD2DIGIT:
                     v = WORD2DIGIT[last_word]
+                    last_word_copy = str(last_word)
                     last_word = ""
+                    for i in range(len(last_word_copy)):
+                        cutoff = last_word_copy[i+1:]
+                        if not cutoff:
+                            break
+                        if any((word.startswith(cutoff) for word in WORD2DIGIT)):
+                            last_word = cutoff
+
                 elif not any((word.startswith(last_word) for word in WORD2DIGIT)):
                     if len(last_word) == 1:
                         last_word = ""
                     else:
                         last_word = s
-            if v:
-                if not start:
-                    start = v
-                else:
-                    end = v
+            if v is not None:
+                vals.append(v)
 
-        if end is None:
-            end = start
-        val = (start * 10) + end
-        print(val)
-        res += val
-    return res
+        val = (vals[0] * 10) + vals[-1]
+        results.append(val)
+
+    return sum(results)
 
 
 def trebuchet(inp):
@@ -77,5 +78,9 @@ if __name__ == "__main__":
     test(trebuchet, expected=142)
     run(trebuchet)
 
-    # test(trebuchet2, test_part=2, expected=281)
-    assert 54712 < run(trebuchet2) < 59556
+    test(trebuchet2, test_part=3, expected=91)
+
+    test(trebuchet2, test_part=2, expected=281)
+    res =  run(trebuchet2)
+    assert 54712 < res < 59556
+    assert res != 54731
