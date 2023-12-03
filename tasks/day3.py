@@ -3,8 +3,6 @@
   """
 import re
 from collections import defaultdict
-from functools import reduce
-from operator import mul
 
 from utils.test_and_run import run, test
 
