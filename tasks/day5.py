@@ -5,13 +5,23 @@ https://adventofcode.com/2023/day/5
 from utils.test_and_run import run, test
 
 
-def parse_almanac(inp):
+def parse_almanac(inp, part=1):
     seeds = [int(x.strip()) for x in inp[0].split(":")[1].strip().split()]
-
     last_row_idx = 2
-    # seed_to_soil, = res
 
-    seeds_section = {seed: seed for seed in seeds}
+    if part == 2:
+        seeds_section = {}
+        s = None
+        for i, x in enumerate(seeds):
+            if not i % 2:
+                s = x
+            else:
+                # finalize
+                for j in range(x):
+                    seeds_section[s + j] = s + j
+    else:
+        seeds_section = {seed: seed for seed in seeds}
+
     res = [seeds_section]
     section_idx = 0
     prev_section = seeds_section
@@ -54,8 +64,8 @@ def parse_almanac(inp):
     return res
 
 
-def fertilizer(inp):
-    almanac = parse_almanac(inp)
+def fertilizer(inp, **kw):
+    almanac = parse_almanac(inp, **kw)
 
     seeds = almanac[0]
     locs = []
@@ -72,6 +82,8 @@ def fertilizer(inp):
 
 
 if __name__ == "__main__":
-    test(fertilizer, expected=35)
-    run(fertilizer)
+    # test(fertilizer, expected=35)
+    # run(fertilizer)
 
+    test(fertilizer, part=2, expected=46)
+    run(fertilizer, part=2)

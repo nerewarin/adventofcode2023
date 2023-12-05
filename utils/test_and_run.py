@@ -42,7 +42,7 @@ def test(fn, expected, *args, **kwargs):
     res = fn(test_data, *args, **kwargs)
 
     if res != expected:
-        raise ValueError(f"fn {fn} returned wrong result: {res} != {expected}!")
+        raise ValueError(f"fn {fn} returned wrong result: {res=} != {expected=}!")
 
 
 def run(fn, *args, **kwargs):
