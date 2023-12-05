@@ -54,7 +54,6 @@ def parse_almanac(inp, part=1):
             print("")
             print(fr"{prev_section=}")
             print(fr"{section=}")
-            # section = {}
             _ = 0
             continue
 
@@ -70,17 +69,12 @@ def parse_almanac(inp, part=1):
         shift = destination_start - source_start
         print(f"search for replacements for line {i} ({line}): {source_start}-{source_end}, {shift}")
         # merge transformations with new line
-        # for (prev_src_start, prev_src_end), prev_shift in prev_section.items():
         replacements = {}  # idx to new intervals
-        # for prev_i, (prev_src_start, prev_src_end, prev_shift) in enumerate(prev_section):
         for prev_i, (prev_src_start, prev_src_end, prev_shift) in enumerate(section):
-            # prev_dst_start = prev_src_start + prev_shift
-            # prev_dst_end = prev_src_end + prev_shift
             r = None
             if source_start <= prev_src_start and source_end >= prev_src_end:
                 # fully replace existing section
-                 r = [
-                    # (source_start, source_end, shift)
+                r = [
                     (prev_src_start, prev_src_end, shift)
                 ]
             elif source_start >= prev_src_start and source_end <= prev_src_end:
@@ -93,7 +87,6 @@ def parse_almanac(inp, part=1):
             elif source_start <= prev_src_start < source_end:
                 # starts at the left but end overlaps prev at the end
                 r = [
-                    # (source_start, source_end, shift),
                     (prev_src_start, source_end, shift),
                     (source_end, prev_src_end, prev_shift),
                 ]
@@ -101,7 +94,6 @@ def parse_almanac(inp, part=1):
                 # from the middle of prev
                 r = [
                     (prev_src_start, source_start, prev_shift),
-                    # (source_start, source_end, shift),
                     (source_start, prev_src_end, shift),
                 ]
             if r:
@@ -112,7 +104,6 @@ def parse_almanac(inp, part=1):
         section = [s for i, s in enumerate(section) if i not in replacements]
         _ = 0
         for old, new_list in replacements.items():
-            # section.pop(old)
             for new in new_list:
                 if new not in section:
                     print(f"add segment {new=}")
