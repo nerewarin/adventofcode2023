@@ -102,13 +102,11 @@ def parse_almanac(inp, part=1):
 
         # do section replacements
         section = [s for i, s in enumerate(section) if i not in replacements]
-        _ = 0
         for old, new_list in replacements.items():
             for new in new_list:
-                if new not in section:
-                    print(f"add segment {new=}")
-                    # maybe cut overlayed?
-                    section.append(new)
+                assert new not in section
+                print(f"add segment {new=}")
+                section.append(new)
         section = sorted(section)
         if replacements:
             print(f"replacements for line {i} complete: {section=}")
