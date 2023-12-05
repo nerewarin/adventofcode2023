@@ -4,8 +4,9 @@ https://adventofcode.com/2023/day/5
 """
 from utils.test_and_run import run, test
 
-# def print(*_):
-#     pass
+
+def print(*_):
+    pass
 
 
 def parse_almanac(inp, part=1):
@@ -40,15 +41,7 @@ def parse_almanac(inp, part=1):
             continue
         last_row_idx += 1
 
-        # prev_destinations = list(prev_section.values())
         if not line:
-            # finalize row
-            # for (prev_src_start, prev_src_end), prev_shift in prev_section.items():
-            #      a = 0
-
-            # for prev_dst in prev_destinations:
-            #     if prev_dst not in section:
-            #         section[prev_dst] = prev_dst
             section_idx += 1
             prev_section = section
             res.append(section)
@@ -115,11 +108,6 @@ def parse_almanac(inp, part=1):
                 print(f"add replacements for {prev_i=}, {r}")
                 replacements[prev_i] = r
 
-        # if not replacements:
-        #     section.append(
-        #         (source_start, source_end, shift)
-        #     )
-
         # do section replacements
         section = [s for i, s in enumerate(section) if i not in replacements]
         _ = 0
@@ -134,15 +122,6 @@ def parse_almanac(inp, part=1):
         if replacements:
             print(f"replacements for line {i} complete: {section=}")
 
-        # for prev_dst in prev_destinations:
-        #     if source_start <= prev_dst < source_start + length:
-        #         dst = destination_start + (prev_dst - source_start)
-        #         if prev_dst in section:
-        #             print(f"conflict: try to override {prev_dst=} value {section[prev_dst]} with {dst=} ")
-        #         section[prev_dst] = dst
-
-        _ = 0
-
     if section:
         print(f"Adding final section: {section=}")
         res.append(section)
@@ -152,32 +131,15 @@ def parse_almanac(inp, part=1):
 def fertilizer(inp, part=1):
     almanac = parse_almanac(inp, part=part)
 
-    seeds = almanac[0]
-    locs = []
-
-    if part == 1:
-        for seed in seeds:
-            i = 1
-            v = seed
-            while i < len(almanac):
-                # print(f"{i}. {v=} -> {almanac[i].get(v, v)}")
-                v = almanac[i].get(v, v)
-                i += 1
-            locs.append(v)
-        return min(locs)
-
-    assert part == 2
-    # go reversed
-    candidate_locs = almanac[-1]
     min_loc = float("inf")
-    for start, end, shift in candidate_locs:
+    for start, end, shift in almanac[-1]:
         min_loc = min(min_loc, start + shift)
     return min_loc
 
 
 if __name__ == "__main__":
-    # test(fertilizer, expected=35)
-    # run(fertilizer)
+    test(fertilizer, expected=35)
+    run(fertilizer)
 
     test(fertilizer, part=2, expected=46)
     run(fertilizer, part=2)
