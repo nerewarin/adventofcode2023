@@ -16,9 +16,11 @@ def parse_almanac(inp, part=1):
             if not i % 2:
                 s = x
             else:
+                # length_ = x
                 # finalize
                 for j in range(x):
                     seeds_section[s + j] = s + j
+                # seeds_section[(s, s + x)] = 0
     else:
         seeds_section = {seed: seed for seed in seeds}
 
@@ -85,5 +87,5 @@ if __name__ == "__main__":
     # test(fertilizer, expected=35)
     # run(fertilizer)
 
-    test(fertilizer, part=2, expected=46)
+    # test(fertilizer, part=2, expected=46)
     run(fertilizer, part=2)
