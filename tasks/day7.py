@@ -13,29 +13,36 @@ from functools import reduce
 #     pass
 
 class CamelCards:
-    def __init__(self, inp):
-        self._inp = inp
+    special_cards = "AKQJT"
+    digits = "".join([str(x) for x in reversed(range(2, 10))])
 
-    @classmethod
-    def _parse_line(cls, line):
+    def __init__(self, inp, part):
+        self._inp = inp
+        self.part2 = part == 2
+
+    def _parse_line(self, line):
         raw_hand, bid = line.split()
         hand = [
-            cls.get_card_power(card) for card in raw_hand
+            self.get_card_power(card) for card in raw_hand
         ]
         return hand, int(bid)
 
-    @staticmethod
-    def get_card_power(card: str):
-        cards = "AKQJT"
-        if card in cards:
-            value = 9 + len(cards) - cards.index(card)
+    def get_all_but_joker(self):
+        return [card for card in (self.special_cards + self.digits) if card != "J"]
+
+    def get_card_power(self, card: str):
+        if self.part2 and card == "J":
+            return 0
+
+        if card in self.special_cards:
+            value = 9 + len(self.special_cards) - self.special_cards.index(card)
         else:
             value = int(card)
 
         return value
 
     @staticmethod
-    def get_hand_power(hand):
+    def get_combo(hand):
         c = Counter(hand)
 
         max_of_a_kind = max(c.values())
@@ -85,7 +92,16 @@ class CamelCards:
             hand, bid = self._parse_line(line)
             assert len(hand) == 5
 
-            power = self.get_hand_power(hand)
+            power = self.get_combo(hand)
+            if self.part2 and 0 in hand:
+                for card in self.get_all_but_joker():
+                    _hand = [
+                        c if c != 0 else self.get_card_power(card)
+                        for c in hand
+                    ]
+                    _power = self.get_combo(_hand)
+                    if _power > power:
+                        power = _power
 
             rank = tuple([power] + hand + [bid])
             ranking.append(
@@ -117,14 +133,14 @@ class CamelCards:
 
 
 def canel_cards(inp, part=1):
-    cards = CamelCards(inp)
+    cards = CamelCards(inp, part)
     return cards.get_total_winnings()
 
 
 def _parse_input_test():
     cards = "A, K, Q, J, T, 9, 8, 7, 6, 5, 4, 3, 2".split(", ")
     for i, card in enumerate(cards):
-        assert CamelCards.get_card_power(card.strip()) == len(cards) - cards.index(card) - 1 + 2
+        assert CamelCards(None, None).get_card_power(card.strip()) == len(cards) - cards.index(card) - 1 + 2
 
 
 if __name__ == "__main__":
@@ -134,3 +150,6 @@ if __name__ == "__main__":
 
     test(canel_cards, expected=6440)
     assert run(canel_cards) < 250703596
+
+    test(canel_cards, part=2, expected=5905)
+    run(canel_cards, part=2)
