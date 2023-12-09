@@ -5,7 +5,7 @@ https://adventofcode.com/2023/day/9
 from utils.test_and_run import run, test
 
 
-def guess_next_number(line):
+def guess_next_number(line, part=1):
     inp = list(map(int, line.split()))
     layers = [
         (inp)
@@ -20,22 +20,28 @@ def guess_next_number(line):
         layers.append(layer)
         last_layer = layer
 
-    print(layers)
-    x = layers[0][-1]
-
+    # print(layers)
     bot = 0
     for i, layer in enumerate(reversed(layers)):
-        next = bot + layer[-1]
+        if part == 2:
+            next = layer[0] - bot
+        else:
+            next = bot + layer[-1]
+
         if i == len(layers) - 1:
             return next
+
         bot = next
 
     raise RuntimeError("couldnt find solution")
 
-def mirage(inp):
-    return sum([guess_next_number(line) for line in inp])
+
+def mirage(inp, **kw):
+    return sum([guess_next_number(line, **kw) for line in inp])
 
 
 if __name__ == "__main__":
     test(mirage, 114)
     run(mirage)
+    test(mirage,  part=2, expected=2)
+    run(mirage, part=2)
