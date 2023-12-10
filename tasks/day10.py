@@ -8,14 +8,13 @@ from utils.test_and_run import run, test
 
 
 class State:
-    def __init__(self, inp, pos, step=0, path=None, visited=None):
+    def __init__(self, inp, pos, step=0, path=None):
         self.inp = inp
         self.x, self.y = self.pos = pos
         self.symbol = self.inp[self.y][self.x]
 
         self.step = step or 0
         self.path = path or []
-        self.visited = visited or {self.pos}
 
         self.height = len(self.inp)
         self.width = len(self.inp[0])
@@ -23,7 +22,6 @@ class State:
     def __repr__(self):
         return (
             f"{self.__class__.__qualname__}(pos={self.pos}, symbol={self.symbol}, step={self.step},"
-                # f" path={self.path}, visited={self.visited})"
         )
 
     def _is_connected(self, pos, start=None):
@@ -169,11 +167,6 @@ class State:
             y = self.y + dy
             pos = (x, y)
 
-            # if pos in self.visited:
-            #     continue
-            # else:
-            #     visited = self.visited.copy()
-            #     visited.add(pos)
             if self.path:
                 last_step = self.path[-1]
                 if (last_step[0] * -1, last_step[1] * -1) == (dx, dy):
@@ -181,7 +174,6 @@ class State:
                     continue
 
             if self._is_connected(pos):
-                # yield State(self.inp, pos, self.step + 1, self.path + [(dx, dy)], visited=visited)
                 yield State(self.inp, pos, self.step + 1, self.path + [(dx, dy)])
 
 
@@ -199,10 +191,6 @@ class PipeMaze:
                     return x, y
         raise ValueError(f"no start position in {self._inp}")
 
-    # def _find_main_loop(self):
-    #     for
-    #
-
     def get_steps_to_farthest_position(self, start_pos=None, step=None, path=None):
         if not start_pos:
             start_pos = self._get_start_pos()
@@ -214,20 +202,20 @@ class PipeMaze:
             state = fringe.popleft()
 
             for succ in state.get_successors():
-                print(f"{state} do {succ.repr_last_step()} -> {succ}")
+                # print(f"{state} do {succ.repr_last_step()} -> {succ}")
                 if succ.symbol == "S":
                     return succ.step // 2
                 else:
                     fringe.append(succ)
 
         raise ValueError("no solution to get_steps_to_farthest_position")
-        # return (state.step + 1) // 2
+
 
 def pipe_paze(inp, **kw):
     return PipeMaze(inp).get_steps_to_farthest_position()
 
 
 if __name__ == "__main__":
-    # test(pipe_paze, 4)
-    # test(pipe_paze, test_part=2, expected=8)
+    test(pipe_paze, 4)
+    test(pipe_paze, test_part=2, expected=8)
     run(pipe_paze)
