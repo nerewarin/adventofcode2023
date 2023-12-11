@@ -81,4 +81,4 @@ if __name__ == "__main__":
     # run(haunted_wasteland)
 
     test(haunted_wasteland2, test_part=2, expected=6)
-    run(haunted_wasteland2)
+    assert run(haunted_wasteland2) > 443
