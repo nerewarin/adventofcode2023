@@ -195,6 +195,7 @@ class PipeMaze:
         if not start_pos:
             start_pos = self._get_start_pos()
 
+        all_pipes = {start_pos}
         state = State(self._inp, start_pos, step, path)
         fringe = collections.deque([state])
 
@@ -202,8 +203,31 @@ class PipeMaze:
             state = fringe.popleft()
 
             for succ in state.get_successors():
+                all_pipes.add(succ.pos)
                 # print(f"{state} do {succ.repr_last_step()} -> {succ}")
                 if succ.symbol == "S":
+                    maze = list([["."] * len(row) for row in self._inp])
+                    for y, line in enumerate(self._inp):
+                        for x, elm in enumerate(line):
+                            if (x, y) in all_pipes:
+                                v = "X"
+                                v = elm
+                                match elm:
+                                    case "|":
+                                        v = "┃"
+                                    case "-":
+                                        v = "━"
+                                    case "F":
+                                        v = "┏"
+                                    case "L":
+                                        v = "┗"
+                                    case "J":
+                                        v = "┛"
+                                    case "7":
+                                        v = "┓"
+                                maze[y][x] = v
+                        print("".join(maze[y]))
+
                     return succ.step // 2
                 else:
                     fringe.append(succ)
@@ -211,7 +235,9 @@ class PipeMaze:
         raise ValueError("no solution to get_steps_to_farthest_position")
 
 
-def pipe_paze(inp, **kw):
+def pipe_paze(inp, part=1, **kw):
+    if part == 2:
+        raise NotImplemented
     return PipeMaze(inp).get_steps_to_farthest_position()
 
 
@@ -219,3 +245,9 @@ if __name__ == "__main__":
     test(pipe_paze, 4)
     test(pipe_paze, test_part=2, expected=8)
     run(pipe_paze)
+
+    # not implemented - visual solving
+    res = run(pipe_paze, part=2)
+    assert 400 < res < 446
+    assert res != 425
+    # or res could be 451 .. 459? but not a big chance
