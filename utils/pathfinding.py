@@ -1,4 +1,22 @@
 import heapq
+
+
+def manhattan_distance(point1, point2):
+    """
+    Calculate Manhattan distance between two points.
+
+    Parameters:
+    - point1: Tuple (x1, y1)
+    - point2: Tuple (x2, y2)
+
+    Returns:
+    - Manhattan distance between the two points.
+    """
+    x1, y1 = point1
+    x2, y2 = point2
+    return abs(x1 - x2) + abs(y1 - y2)
+
+
 class PriorityQueue:
     """
       Implements a priority queue data structure. Each inserted item
