@@ -63,6 +63,7 @@ def haunted_wasteland(inp):
 
 def haunted_wasteland2(inp, **kw):
     instructions, nodes = _parse_inp(inp)
+    print(f"{instructions[:20]}...")
 
     is_end = lambda x: x[-1] == "Z"
     is_start = lambda x: x[-1] == "A"
@@ -100,13 +101,11 @@ def haunted_wasteland2(inp, **kw):
 
                 matches[i].append(total_steps)
 
-                print(f"{initial_currents[c_ind]} meets {current} at {lap=}, {total_steps=}")
+                print(f"{initial_currents[i]} meets {current} at {lap=}, {total_steps=}")
 
         if all(matches.values()):
             res = find_minimum_common_divisor(*list(matches.values()))
             return res
-
-    return lap * instructions_length
 
 
 if __name__ == "__main__":
