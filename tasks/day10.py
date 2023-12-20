@@ -248,6 +248,5 @@ if __name__ == "__main__":
 
     # not implemented - visual solving
     res = run(pipe_paze, part=2)
-    assert 400 < res < 437
-    assert res != 425
+    assert 410 < res < 417
     # or res could be 451 .. 459? but not a big chance
