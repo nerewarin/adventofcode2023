@@ -50,12 +50,13 @@ class PriorityQueue:
 class Node:
     """A node class for A* Pathfinding"""
 
-    def __init__(self, parent=None, position=None, signal=0, closest_signal_in=0, closest_signal_pos_from_end=0):
+    def __init__(self, parent=None, position=None, signal=0, closest_signal_in=0, closest_signal_pos_from_end=0, path=None):
         self.parent = parent
         self.position = position
         self.signal = signal
         self.closest_signal_in = closest_signal_in
         self.closest_signal_pos_from_end = closest_signal_pos_from_end
+        self.path = path or []
 
         """
         F is the total cost of the node.
@@ -95,13 +96,15 @@ def get_signal(maze, pos):
     return maze[pos[0]][pos[1]]
 
 
-def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
+def astar(maze, start, end, allow_diagonal=True, signal_limit=None, get_signal_func=None, max_blocks_in_a_single_direction=None):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
+    if get_signal_func is None:
+        get_signal_func = get_signal
 
     # Create start and end node
-    start_node = Node(None, start, signal=get_signal(maze, start))
+    start_node = Node(None, start, signal=get_signal_func(maze, start))
     start_node.g = start_node.h = start_node.f = 0
-    end_node = Node(None, end, signal=get_signal(maze, end))
+    end_node = Node(None, end, signal=get_signal_func(maze, end))
     end_node.g = end_node.h = end_node.f = 0
 
     # Initialize both open and closed list
@@ -123,28 +126,7 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
         #         current_node = item
         #         current_index = index
 
-        maze_str = [[chr(x + 96) for x in list(line)] for line in maze]
-        for node_ in open_list:
-            # maze_str[node_.position[0]][node_.position[1]] = " "
-            v = maze_str[node_.position[0]][node_.position[1]]
-            # if ord('a') <= ord(v) <= ord('z'):
-            #     v = chr(ord(v) - 32)
-            #     maze_str[node_.position[0]][node_.position[1]] = v
-            maze_str[node_.position[0]][node_.position[1]] = " "
-
-        for position in closed_list:
-            maze_str[position[0]][position[1]] = "."
-        maze_str[current_node.position[0]][current_node.position[1]] = "*"
-
-        cycle += 1
-        if not cycle % 1000:
-            print()
-            for i, line in enumerate(maze_str):
-                s = "".join(line)
-                print(s)
-            # print(f"{cycle=}: {current_node=}")
-            print(cycle, ": current_node", current_node)
-            print()
+        cycle, maze_str = print_maze(closed_list, current_node, cycle, maze, open_list)
 
         # Pop current off open list, add to closed list
         # open_list.pop(current_index)
@@ -180,6 +162,7 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
         if allow_diagonal:
             adjacent_squares += [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 
+
         for new_position in adjacent_squares:  # Adjacent squares
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
@@ -188,10 +171,16 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
             if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
                 continue
 
+            if max_blocks_in_a_single_direction:
+                _last = current_node.path[:max_blocks_in_a_single_direction - 1] + [new_position]
+                if len(_last) == max_blocks_in_a_single_direction and set(_last) != 1:
+                    print(f"reached max_blocks_in_a_single_direction: {_last}")
+                    continue
+
             # Make sure walkable terrain
             # if maze[node_position[0]][node_position[1]] != 0:
             #     continue
-            new_signal = get_signal(maze, node_position)
+            new_signal = get_signal_func(maze, node_position)
             if signal_limit:
                 if new_signal > (current_node.signal + signal_limit):
                     continue
@@ -212,7 +201,7 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
                 closest_signal_pos = end
             closest_signal_pos_from_end = dist(closest_signal_pos, end)
 
-            new_node = Node(current_node, node_position, new_signal, closest_signal_in, closest_signal_pos_from_end)
+            new_node = Node(current_node, node_position, new_signal, closest_signal_in, closest_signal_pos_from_end, path=current_node.path + [new_position])
 
             # Append
             children.append(new_node)
@@ -254,6 +243,33 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
 
             # Add the child to the open list
             open_list.append(child)
+
+        raise ValueError
+
+
+def print_maze(closed_list, current_node, cycle, maze, open_list):
+    maze_str = [[chr(x + 96) for x in list(line)] for line in maze]
+    for node_ in open_list:
+        # maze_str[node_.position[0]][node_.position[1]] = " "
+        v = maze_str[node_.position[0]][node_.position[1]]
+        # if ord('a') <= ord(v) <= ord('z'):
+        #     v = chr(ord(v) - 32)
+        #     maze_str[node_.position[0]][node_.position[1]] = v
+        maze_str[node_.position[0]][node_.position[1]] = " "
+    for position in closed_list:
+        maze_str[position[0]][position[1]] = "."
+    maze_str[current_node.position[0]][current_node.position[1]] = "*"
+    cycle += 1
+    if not cycle % 1000:
+        print()
+        for i, line in enumerate(maze_str):
+            s = "".join(line)
+            print(s)
+        # print(f"{cycle=}: {current_node=}")
+        print(cycle, ": current_node", current_node)
+        print()
+    return cycle, maze_str
+
 
 def nullHeuristic(state, problem=None):
     """
