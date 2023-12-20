@@ -3,9 +3,20 @@
 https://adventofcode.com/2023/day/20
 """
 from collections import deque
-from typing import List
+from functools import partial
+from typing import List, Callable
 
 from utils.test_and_run import run, test
+
+_PULSE2STR = {0: "low", 1: "high"}
+
+
+class Pulses(dict):
+    def __init__(self, *args, **kwargs):
+        if not args and not kwargs:
+            args = [{0: 0, 1: 0}]
+
+        super().__init__(*args, **kwargs)
 
 
 class ModuleRegistry:
@@ -57,19 +68,35 @@ class Module:
         self.inputs = inputs or []
         self.destinations = destinations
 
+        self.pulses = Pulses()
+
     def __repr__(self):
         # return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, inputs={self.inputs})"
-        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations})"
+        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}), pulses={self.pulses[0]} / {self.pulses[1]}"
 
     def add_input(self, module: "Module"):
         self.inputs.append(module.name)
 
-    def receive(self, src, pulse):
-        ...
+    def receive(self, src, pulse) -> List[Callable]:
+        raise NotImplemented
 
     def send(self, pulse):
-        for dst in self.destinations:
-            dst.receive(self, pulse)
+        # register future actions
+        receive_actions = []
+
+        for dst_name in self.destinations:
+            dst = Modules.get(dst_name)
+
+            action = partial(dst.receive, self, pulse)
+            printable = f"{self.name} -{_PULSE2STR[pulse]}-> {dst_name}"
+
+            receive_actions.append(
+                (action, printable)
+            )
+
+            self.pulses[pulse] += 1
+
+        return receive_actions
 
 @register_module
 class FlipFlop(Module):
@@ -80,7 +107,7 @@ class FlipFlop(Module):
         self.on = False
 
     def __repr__(self):
-        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, on={self.on})"
+        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, on={self.on}, pulses={self.pulses[0]} / {self.pulses[1]})"
         # return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, inputs={self.inputs}, on={self.on})"
 
     @property
@@ -88,8 +115,8 @@ class FlipFlop(Module):
         return not self.on
 
     def receive(self, src, pulse):
-        if pulse == 0:
-            return
+        if pulse == 1:
+            return []
 
         self.on = not self.on
         pulse = self.on * 1
@@ -125,33 +152,40 @@ class Conjunction(Module):
         else:
             pulse_out = 1
 
-        self.send(pulse_out)
+        return self.send(pulse_out)
 
 
 @register_module
 class Broadcaster(Module):
     prefix = "b"
 
-    def receive_pulse(self, pulse):
-        # if pulse == "HIGH"
-        # self.on = not self.on
-        self.send(pulse)
+    def receive(self, src: Module, pulse: int):
+        return self.send(pulse)
 
+@register_module
+class Dummy(Module):
+    prefix = "."
+
+    def receive(self, src: Module, pulse: int):
+        res = self.send(pulse)
+        assert len(res) == 0
+        return res
 
 class Button(Module):
-    # TODO
-    ...
+    prefix = None
 
 
 class PulsePropagation:
     def __init__(self, inp):
+        # clear from prev run
+        Modules._name2module = {}
+
         self._inp = inp
         self._modules = self._parse_modules()
 
         self._enrich_modules()
 
         schema = deque()
-        schema.append(self.btn)
         self.schema = schema
 
     @property
@@ -160,16 +194,16 @@ class PulsePropagation:
         assert isinstance(btn, Button)
         return btn
 
-    def _construct_module(self, src, destinations):
-        prefix = src[0]
+    def _construct_module(self, raw_name, destinations):
+        prefix = raw_name[0]
         module_class = ModuleRegistry.get_module_class(prefix)
 
         # for dst_name in destinations:
 
         if prefix == Broadcaster.prefix:
-            name = src
+            name = raw_name
         else:
-            name = src[1:]
+            name = raw_name[1:]
 
         return module_class(name=name, destinations=destinations)
 
@@ -190,8 +224,10 @@ class PulsePropagation:
         modules = self._modules
 
         # add button
-        broadcaster = self._modules[0]
-        assert broadcaster.name == "broadcaster"
+        broadcasters = [m for m in self._modules if m.name == "broadcaster"]
+        assert len(broadcasters) == 1
+        broadcaster = broadcasters[0]
+
         btn = Button("button", destinations=[broadcaster.name])
         Modules.register(btn.name, btn)
 
@@ -200,23 +236,87 @@ class PulsePropagation:
         for m in modules:
             m: Module
             for dst_name in m.destinations:
-                dst = Modules.get(dst_name)
+                try:
+                    dst = Modules.get(dst_name)
+                except KeyError:
+                    dst = self._construct_module(f".{dst_name}", [])
+                    Modules.register(dst_name, dst)
+
                 dst.add_input(m)
 
         return
 
-    def propagate(self):
+    def propagate_btn_push(self, to_print=False):
         low_pulses = 0
         high_pulses = 0
-        steps = 1000
-        ...
+
+        schema = self.schema
+
+        initial_action = partial(self.btn.send, 0)
+        assert len(self.btn.destinations) == 1
+        printable = f"{self.btn.name} -{_PULSE2STR[0]}-> {self.btn.destinations[0]}"
+        # print(printable)
+
+        schema.append(
+            (initial_action, printable)
+        )
+        # button -low-> broadcaster
+        # print(button -low-> broadcaster)
+
+        # actions = initial_action()
+        #
+        # for act in actions:
+        #     schema.append(act)
+
+        printables = []
+        while schema:
+            act, printable = schema.popleft()
+
+            new_actions = act()
+            for new_act, new_printable in new_actions:
+                schema.append(
+                    (new_act, new_printable)
+                )
+                printables.append(new_printable)
+                if to_print:
+                    print(new_printable)
+
+        return low_pulses, high_pulses, printables
+
+    def propagate_n_times(self, n):
+        low_pulses = 0
+        high_pulses = 0
+        printables = []
+
+        for i in range(n):
+            l, h, new_printables = self.propagate_btn_push(to_print=i == 0)
+
+            low_pulses += l
+            high_pulses += h
+            printables.extend(new_printables)
+
+        # calc pushes
+        pulses = Pulses()
+        for m in self._modules:
+            for k, v in m.pulses.items():
+                pulses[k] += v
+
+        low_pulses = pulses[0]
+        high_pulses = pulses[1]
+
         return low_pulses * high_pulses
 
 
 def pulse_propagation(inp, part=1, **kw):
-    return PulsePropagation(inp).propagate()
+    return PulsePropagation(inp).propagate_n_times(1000)
 
 
 if __name__ == "__main__":
-    test(pulse_propagation, 32000000)
+    test(
+        pulse_propagation, 32000000
+    )
     assert run(pulse_propagation) > 410
+
+    # test(
+    #     pulse_propagation, 32000000
+    # )
