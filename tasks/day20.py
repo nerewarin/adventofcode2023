@@ -4,7 +4,7 @@ https://adventofcode.com/2023/day/20
 """
 from collections import deque
 from functools import partial
-from typing import List, Callable
+from typing import List, Callable, cast
 
 from utils.test_and_run import run, test
 
@@ -48,6 +48,7 @@ class Modules:
     def get(cls, name) -> "Module":
         return cls._name2module[name]
 
+
 def register_module(cls):
     ModuleRegistry.register(cls.prefix, cls)
     return cls
@@ -63,16 +64,16 @@ class Module:
             *args,
             inputs: List["Module"] = None,
             **kwargs
-        ):
+    ):
         self.name = name
         self.inputs = inputs or []
         self.destinations = destinations
 
-        self.pulses = Pulses()
+        self.pulses_sent = Pulses()
 
     def __repr__(self):
         # return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, inputs={self.inputs})"
-        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}), pulses={self.pulses[0]} / {self.pulses[1]}"
+        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}), pulses={self.pulses_sent[0]} / {self.pulses_sent[1]}"
 
     def add_input(self, module: "Module"):
         self.inputs.append(module.name)
@@ -94,9 +95,10 @@ class Module:
                 (action, printable)
             )
 
-            self.pulses[pulse] += 1
+            self.pulses_sent[pulse] += 1
 
         return receive_actions
+
 
 @register_module
 class FlipFlop(Module):
@@ -107,7 +109,7 @@ class FlipFlop(Module):
         self.on = False
 
     def __repr__(self):
-        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, on={self.on}, pulses={self.pulses[0]} / {self.pulses[1]})"
+        return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, on={self.on}, pulses={self.pulses_sent[0]} / {self.pulses_sent[1]})"
         # return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}, inputs={self.inputs}, on={self.on})"
 
     @property
@@ -162,14 +164,28 @@ class Broadcaster(Module):
     def receive(self, src: Module, pulse: int):
         return self.send(pulse)
 
+
 @register_module
-class Dummy(Module):
+class RX(Module):
     prefix = "."
 
+    def __init__(self, name, *args, **kwargs):
+        assert name == "rx"
+        super().__init__(name, *args, **kwargs)
+
+        self.low_pulses_received = 0
+
+    def __repr__(self):
+        return f"{self.__class__.__qualname__}(name={self.name!r}, low_pulses_received={self.low_pulses_received})"
+
     def receive(self, src: Module, pulse: int):
+        if pulse == 0:
+            self.low_pulses_received += 1
+
         res = self.send(pulse)
         assert len(res) == 0
         return res
+
 
 class Button(Module):
     prefix = None
@@ -239,8 +255,10 @@ class PulsePropagation:
                 try:
                     dst = Modules.get(dst_name)
                 except KeyError:
+                    assert dst_name == "rx"
                     dst = self._construct_module(f".{dst_name}", [])
                     Modules.register(dst_name, dst)
+                    modules.append(dst)
 
                 dst.add_input(m)
 
@@ -298,7 +316,7 @@ class PulsePropagation:
         # calc pushes
         pulses = Pulses()
         for m in self._modules:
-            for k, v in m.pulses.items():
+            for k, v in m.pulses_sent.items():
                 pulses[k] += v
 
         low_pulses = pulses[0]
@@ -307,16 +325,30 @@ class PulsePropagation:
         return low_pulses * high_pulses
 
 
-def pulse_propagation(inp, part=1, **kw):
+def propagate_n_times(inp, part=1, **kw):
     return PulsePropagation(inp).propagate_n_times(1000)
 
 
-if __name__ == "__main__":
-    test(
-        pulse_propagation, 32000000
-    )
-    assert run(pulse_propagation) > 410
+def get_fewest_number_of_button_presses(inp, **kw):
+    i = 0
+    pp = PulsePropagation(inp)
+    rx: RX = cast(RX, Modules.get("rx"))
 
+    while not rx.low_pulses_received:
+        i += 1
+        pp.propagate_btn_push(to_print=i == 1)
+        rx: RX = cast(RX, Modules.get("rx"))
+
+        if not i % 10e6:
+            print(i, rx)
+
+    return i
+
+
+if __name__ == "__main__":
     # test(
     #     pulse_propagation, 32000000
     # )
+    # assert run(propagate_n_times) == 670984704  # for my 20/run.txt only
+
+    run(get_fewest_number_of_button_presses)
