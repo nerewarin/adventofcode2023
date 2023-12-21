@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
     # not implemented - visual solving
     res = run(pipe_paze, part=2)
-    assert (417 < res < 437 or
+    assert (420 < res < 437 or
             # maybe
             res == 402
             )
