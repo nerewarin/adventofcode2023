@@ -150,9 +150,9 @@ if __name__ == "__main__":
     test(step_counter, steps=6, expected=16)
     assert run(step_counter, steps=64) == 3578
 
-    # test(step_counter2, steps=50, expected=1594)
-    # test(step_counter2, steps=100, expected=6536)
-    # test(step_counter2, steps=500, expected=167004)
-    # test(step_counter2, steps=1000, expected=668697)
-    # test(step_counter2, steps=5000, expected=16733044)
-    # # run(step_counter, steps=26501365)
+    test(step_counter2, steps=50, expected=1594)
+    test(step_counter2, steps=100, expected=6536)
+    test(step_counter2, steps=500, expected=167004)
+    test(step_counter2, steps=1000, expected=668697)
+    test(step_counter2, steps=5000, expected=16733044)
+    # run(step_counter, steps=26501365)
