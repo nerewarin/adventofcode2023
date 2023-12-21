@@ -43,12 +43,11 @@ class State:
         ]
 
     def _is_valid_move(self, xy):
-        x, y = self.pos
-        x2, y2 = xy
+        x, y = xy
         if not self.infinite:
-            if not 0 <= x2 < self.width:
+            if not 0 <= x < self.width:
                 return False
-            if not 0 <= y2 < self.height:
+            if not 0 <= y < self.height:
                 return False
         else:
             a = 0
@@ -150,7 +149,7 @@ if __name__ == "__main__":
     test(step_counter, steps=3, expected=6)
     test(step_counter, steps=6, expected=16)
     assert run(step_counter, steps=64) == 3578
-    #
+
     # test(step_counter2, steps=50, expected=1594)
     # test(step_counter2, steps=100, expected=6536)
     # test(step_counter2, steps=500, expected=167004)
