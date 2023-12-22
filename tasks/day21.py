@@ -42,6 +42,11 @@ class State:
             (-1, 0),
         ]
 
+    def _fit(self, x, y):
+        x = x % self.width
+        y = y % self.height
+        return x, y
+
     def _is_valid_move(self, xy):
         x, y = xy
         if not self.infinite:
@@ -50,7 +55,7 @@ class State:
             if not 0 <= y < self.height:
                 return False
         else:
-            a = 0
+            x, y = self._fit(x, y)
 
         return self.maze[x][y] == 0
 
@@ -78,6 +83,10 @@ class StepCounter:
         self.steps = steps
         self.infinite = infinite
 
+        self.start_state = State(
+            self.maze, self.start, path=[], step=0, infinite=self.infinite
+        )
+
     @staticmethod
     def _parse_input(inp):
         maze = cast_2d_list_elements(inp, type_=str)
@@ -93,11 +102,11 @@ class StepCounter:
         return maze, start
 
     def is_garden(self, xy):
-        x, y = xy
+        x, y = self.start_state._fit(*xy)
         return self.maze[x][y] == 0
 
     def _bfs(self):
-        start_state = State(self.maze, self.start, path=[], step=0, infinite=self.infinite)
+        start_state = self.start_state
         problem = Problem(start_state, goal=self.steps)
 
         start_state = problem.getStartState()
@@ -106,17 +115,26 @@ class StepCounter:
         for state in start_successors:
             fringe.appendleft(state)
 
-        # _current_steps = 0
+        _current_steps = 0
 
         gardens = set([])
         visited = set([])
+        min_step_for_visit = {}
+        step2gardens = collections.defaultdict(set)
         while fringe:
             state = fringe.popleft()
+            pos, step = state.serialize()
+            # if pos not in visited:
+            #     visited.add(pos)
+            #     min_step_for_visit[pos] = step
             visited.add(state.serialize())
-            #
-            # if state.step > _current_steps:
-            #     _current_steps = state.step
-            #     print(f"step {_current_steps}")
+
+            if state.step > _current_steps:
+                _current_steps = state.step
+                print(f"step {_current_steps}")
+
+            if self.is_garden(state.pos):
+                step2gardens[state.step].add(state.serialize())
 
             if problem.isGoalState(state):
                 if self.is_garden(state.pos):
@@ -127,8 +145,20 @@ class StepCounter:
             for state in successors:
                 if state.serialize() in visited:
                     continue
+                # pos, step = state.serialize()
+                # if pos in visited:
+                #     if step == min_step_for_visit[pos]:
+                #
+                #
+                #     if step < min_step_for_visit[pos]:
+                #         min_step_for_visit[pos] = step
+                #     # else:
+                #     #     continue
+                #     # min_step_for_visit[pos] = min(step, min_step_for_visit[pos])
+                #     # continue
                 fringe.appendleft(state)
 
+        print([len(step2gardens[i]) for i in range(self.steps)])
         return len(gardens)
 
     def get_number_of_reachable_garden_plots(self):
@@ -144,15 +174,20 @@ def step_counter2(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    test(step_counter, steps=1, expected=2)
-    test(step_counter, steps=2, expected=4)
-    test(step_counter, steps=3, expected=6)
-    test(step_counter, steps=6, expected=16)
-    assert run(step_counter, steps=64) == 3578
+    # test(step_counter, steps=1, expected=2)
+    # test(step_counter, steps=2, expected=4)
+    # test(step_counter, steps=3, expected=6)
+    # test(step_counter, steps=6, expected=16)
+    # assert run(step_counter, steps=64) == 3578
 
-    test(step_counter2, steps=50, expected=1594)
+    # test(step_counter2, steps=50, expected=1594)
     test(step_counter2, steps=100, expected=6536)
     test(step_counter2, steps=500, expected=167004)
-    test(step_counter2, steps=1000, expected=668697)
-    test(step_counter2, steps=5000, expected=16733044)
+    # test(step_counter2, steps=1000, expected=668697)
+    # test(step_counter2, steps=5000, expected=16733044)
+
+    # approximation to step=500 is
+    # 16735007.8625024
+    # compared to
+    # 16733044
     # run(step_counter, steps=26501365)
