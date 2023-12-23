@@ -21,7 +21,7 @@ class State:
 
     def __repr__(self):
         return (
-            f"{self.__class__.__qualname__}(pos={self.pos}, symbol={self.symbol}, step={self.step},"
+            f"{self.__class__.__qualname__}(pos={self.pos}, symbol={self.symbol}, step={self.step})"
         )
 
     def _is_connected(self, pos, start=None):
@@ -248,9 +248,5 @@ if __name__ == "__main__":
 
     # not implemented - visual solving
     res = run(pipe_paze, part=2)
-    assert (423 < res < 437 or
-            # maybe
-            res == 402
-            )
-    assert res != 425
+    assert 431 < res < 437
     # or res could be 451 .. 459? but not a big chance
