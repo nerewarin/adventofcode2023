@@ -1,5 +1,9 @@
 import heapq
+from collections import defaultdict
 
+
+def print(*_):
+    pass
 
 def manhattan_distance(point1, point2):
     """
@@ -315,6 +319,7 @@ def uniformCostSearch(problem):
     else:
         return []
 
+
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
@@ -324,35 +329,77 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     fringe = PriorityQueue()
     pushed = set([])
     best_cost = {}
+    best_path = {}
+    last3steps = defaultdict(set)
+
     for state, action, cost in start_successors:
         moving = state, action, cost
         score = cost + heuristic(state, problem)
         fringe.push((state, [action], cost), score)
-        best_cost[state] = score
+        best_cost[state.pos] = score
         pushed.add(moving)
-    closed = [start_state]
+
+    closed = [start_state.pos]
+
+    for_debug = set([start_state.pos])
 
     while not fringe.isEmpty():
         moving = fringe.pop()
         state, path, cost = moving
+        state_pos = state.pos
+        print(state)
 
         if problem.isGoalState(state):
-            return path
+            # TODO del this shit start
+            loss = 0
+            x, y = start_state.x, start_state.y
+            for i, (dx, dy) in enumerate(state.path):
+                x, y = x + dx, y + dy
+
+                loss_ = problem.inp[y][x]
+                loss += loss_
+                # print(f"{i + 1}. ({x}, {y}) = {loss_}, {loss=}")
+            if loss < 985 and loss != 981:
+                # TODO del this shit end. left only return path
+                return path
 
         closed.append(state)
+        if state.pos in for_debug:
+            a = 0
+
         if state not in successors.keys():
             successors[state] = problem.getSuccessors(state)
 
         for child in successors[state]:
             child_state, child_action, child_cost = child
+            child_path = child_state.path
 
             full_cost = cost + child_cost
-            score = full_cost + heuristic(child_state, problem)
+            h = heuristic(child_state, problem)
+            score = full_cost + h
 
-            if (child_state not in closed) and (child not in pushed):
-                best_cost[child_state] = score
-                fringe.push((child_state, path + [child_action], full_cost), score)
-                pushed.add(child)
+            child_pos = child_state.pos
+            if child_pos == (9, 2):
+                print(f"{full_cost=}")
+                child_state.show_path()
+
+            if (child_pos not in closed) and (child not in pushed):
+                is_best_cost = child_pos not in best_cost or score <= best_cost[child_pos]
+
+                # just for 2023/day17: give a chance to path with fresh direction (last action was turn)
+                # last_action_is_turn = len(child_path) > 1 and child_state.path[-1] != child_state.path[-2]
+                last_action_is_turn = False
+                last_three_actions = tuple(child_state.path[-3:])
+
+                if is_best_cost or last_action_is_turn or last_three_actions not in last3steps[child_pos]:
+                    if is_best_cost:
+                        best_cost[child_pos] = score
+
+                    last3steps[child_pos].add(last_three_actions)
+
+                    best_path[child_pos] = child_state.path_str
+                    fringe.push((child_state, path + [child_action], full_cost), score)
+                    pushed.add(child)
     else:
         return []
 

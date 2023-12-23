@@ -10,7 +10,7 @@ class PositionSearchProblem:
     Note: this search problem is fully specified; you should NOT change it.
     """
 
-    def __init__(self, state, goal, costFn = lambda x: 1):
+    def __init__(self, state, goal, costFn = lambda x: 1, inp=None):
         """
         Stores the start and goal.
 
@@ -21,6 +21,7 @@ class PositionSearchProblem:
         self.startState = state
         self.goal = goal
         self.costFn = costFn
+        self.inp = inp
 
     def getStartState(self):
         return self.startState
