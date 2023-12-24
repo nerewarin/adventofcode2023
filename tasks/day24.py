@@ -143,16 +143,21 @@ class Hailstone:
         x2, y2 = hailstone2.x, hailstone2.y
         vx2, vy2 = hailstone2.vx, hailstone2.vy
 
-        # Check if velocities are parallel (no intersection)
-        if vx1 * vy2 == vx2 * vy1:
-            return None
-
         # t1 and t2 are the time parameters for the two lines
         # Solve for t1 and t2 using the linear equations:
         # x1 + vx1 * t1 = x2 + vx2 * t2 and y1 + vy1 * t1 = y2 + vy2 * t2
         det = vx1 * vy2 - vx2 * vy1
+
+        # Check if velocities are parallel (no intersection)
+        if det == 0:
+            return None
+
         t1 = (x2 * vy2 - y2 * vx2 - x1 * vy2 + y1 * vx2) / det
         t2 = (-x2 * vy1 + y2 * vx1 + x1 * vy1 - y1 * vx1) / det
+
+        # Check if t1 and t2 are positive
+        if t1 < 0 and t2 < 0:
+            return None  # Intersection occurs in the past
 
         # Calculate intersection point
         intersect_x = x1 + vx1 * t1
@@ -185,13 +190,12 @@ class NeverTellMeTheOdds:
     def get_number_of_collided(self):
         res = set([])
 
-        for item, item2 in combinations(self.items, 2):
-            intersection = item.find_intersection_point(item, item2, self.area)
+        for item1, item2 in combinations(self.items, 2):
+            intersection = item1.find_intersection_point(item1, item2, self.area)
 
             # if item.paths_intersects_with(item2):
             if intersection:
-                res.add(i)
-                res.add(j)
+                res.add(tuple(sorted([item1.name, item2.name])))
 
         return len(res)
 
