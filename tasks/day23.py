@@ -1,6 +1,6 @@
 """
 --- Day 23: Sand Slabs ---
---- Day 23: A Long Walk ---
+https://adventofcode.com/2023/day/23
 """
 import collections
 import dataclasses

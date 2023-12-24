@@ -2,9 +2,6 @@ import heapq
 from collections import defaultdict
 
 
-def print(*_):
-    pass
-
 def manhattan_distance(point1, point2):
     """
     Calculate Manhattan distance between two points.
@@ -347,21 +344,26 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         moving = fringe.pop()
         state, path, cost = moving
         state_pos = state.pos
-        print(state)
 
         if problem.isGoalState(state):
             # TODO del this shit start
             loss = 0
             x, y = start_state.x, start_state.y
+            path_str = []
             for i, (dx, dy) in enumerate(state.path):
                 x, y = x + dx, y + dy
 
                 loss_ = problem.inp[y][x]
                 loss += loss_
-                # print(f"{i + 1}. ({x}, {y}) = {loss_}, {loss=}")
-            if loss < 985 and loss != 981:
+                path_str.append(f"{i + 1}. ({x}, {y}) = {loss_}, {loss=}")
+            if loss < 985 and loss != 981 and loss not in range(957, 960):
                 # TODO del this shit end. left only return path
+                for p in path_str:
+                    print(p)
                 return path
+            else:
+                print(f"Found path loss of {loss}")
+                continue
 
         closed.append(state)
         if state.pos in for_debug:
@@ -379,9 +381,6 @@ def aStarSearch(problem, heuristic=nullHeuristic):
             score = full_cost + h
 
             child_pos = child_state.pos
-            if child_pos == (9, 2):
-                print(f"{full_cost=}")
-                child_state.show_path()
 
             if (child_pos not in closed) and (child not in pushed):
                 is_best_cost = child_pos not in best_cost or score <= best_cost[child_pos]

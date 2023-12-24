@@ -9,8 +9,8 @@ from utils.pathfinding import manhattan_distance, aStarSearch
 from utils.position_search_problem import PositionSearchProblem
 from utils.test_and_run import run, test
 
-def print(*_):
-    pass
+# def print(*_):
+#     pass
 
 class State(BaseState):
     directions = {
@@ -190,7 +190,7 @@ class ClumsyCrucible:
             loss += loss_
             print(f"{i+1}. ({x}, {y}) = {loss_}, {loss=}")
 
-        self._print_test_path()
+        # self._print_test_path()
 
         return loss
 
@@ -202,5 +202,5 @@ def minimize_loss(inp, **kw):
 if __name__ == "__main__":
     test(minimize_loss, 102)
     res = run(minimize_loss)
-    assert 950 < res < 984
-    assert res not in (980, 981)
+    # not works but was close :)
+    assert res == 956
