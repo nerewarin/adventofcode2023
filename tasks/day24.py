@@ -8,6 +8,7 @@ from collections import defaultdict
 from itertools import combinations
 
 import numpy as np
+import pulp
 
 from utils.input_formatters import cast_2d_list_elements
 from utils.position_search_problem import PositionSearchProblem
@@ -139,7 +140,7 @@ class NeverTellMeTheOdds:
         """
         return len(res)
 
-    def get_sum_of_rock_coordinate(self):
+    def _normalize_positions(self):
         int_positions = []
         minimums = [float("inf")] * 3
         maximums = [float("-inf")] * 3
@@ -173,80 +174,21 @@ class NeverTellMeTheOdds:
         #
         # a = 0
 
-        def define_plane(hailstone1, hailstone2):
-            p1 = np.array(hailstone1.position)
-            p2 = p1 + np.array(hailstone1.velocity)
-            p3 = np.array(hailstone2.position)
-            p4 = p3 + np.array(hailstone2.velocity)
+    @staticmethod
+    def _spherical_search_generator(radius=3):
+        # Iterate over all coordinates within the current shell
+        for x in range(-radius, radius + 1):
+            for y in range(-radius, radius + 1):
+                for z in range(-radius, radius + 1):
+                    yield (x, y, z)
 
-            v1 = p2 - p1
-            v2 = p4 - p3
+    def get_sum_of_rock_coordinate(self):
+        # self._normalize_positions()
 
-            normal_vector = np.cross(v1, v2)
-            if np.all(normal_vector == 0):
-                return None  # Rays are parallel or collinear, no unique plane
+        for velocity_candidate in self._spherical_search_generator():
+            print(velocity_candidate)
 
-            return p1, normal_vector
-
-        def intersection_line(plane1, plane2):
-            p1, n1 = plane1
-            p2, n2 = plane2
-
-            # Direction vector of the line (cross product of the normal vectors)
-            line_direction = np.cross(n1, n2)
-            if np.all(line_direction == 0):
-                return None  # Planes are parallel or coincident
-
-            # Find a point on the intersection line
-            # Solve the system of equations: n1 . (p - p1) = 0 and n2 . (p - p2) = 0
-            # This can be done using various methods, here we use np.linalg.solve
-            A = np.array([n1, n2, line_direction])
-            b = np.array([np.dot(n1, p1), np.dot(n2, p2), 0])
-            try:
-                line_point = np.linalg.solve(A.T, b)
-                # Round the solution to the nearest integers
-                # line_point = np.round(line_point).astype(int)
-            except np.linalg.LinAlgError:
-                return None  # No unique solution
-
-            return line_point, line_direction
-
-
-        # Example usage
-        hailstones = self.hailstones
-
-        planes = [define_plane(hailstones[i], hailstones[j]) for i in range(len(hailstones)) for j in
-            range(i + 1, len(hailstones))]
-        planes = [plane for plane in planes if plane is not None]  # Filter out None planes
-
-        if not planes:
-            print("No planes can be formed from the given hailstones.")
-            exit()
-
-        # Find intersection line
-        current_line = None
-        for plain1, plain2 in combinations(planes, 2):
-            current_line = intersection_line(plain1, plain2)
-            if current_line:
-                break
-
-        # current_line = intersection_line(planes[0], planes[1])
-        for plane in planes[2:]:
-            if not current_line:
-                break
-            new_line = intersection_line(current_line, plane)
-            if new_line:
-                current_line = new_line
-
-        if current_line:
-            print("Found a line that intersects all rays:", current_line)
-        else:
-            print("No single line intersects all rays")
-            return None
-
-        line_point, line_direction = current_line
-        # for h in self.hailstones:
-        return sum(line_point)
+        a = 0
 
 
 def never_tell_me_the_odds(inp, part=1, area=None):
