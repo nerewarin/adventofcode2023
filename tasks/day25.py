@@ -37,30 +37,25 @@ class Snowverload:
         return graph, nx_graph
 
     def disconnect_and_multiply(self):
-        G = self.nx_graph
+        centrality = nx.edge_betweenness_centrality(self.nx_graph)
+        # Its critical to sort edges by centrality first
+        sorted_edges = sorted(self.nx_graph.edges(), key=lambda edge: centrality[edge], reverse=True)
 
-        def find_edges_to_disconnect(G_original):
-            centrality = nx.edge_betweenness_centrality(G_original)
-            # Its critical to sort edges by centrality first
-            sorted_edges = sorted(G_original.edges(), key=lambda edge: centrality[edge], reverse=True)
+        # Try removing sets of three edges
+        for edges in combinations(sorted_edges, 3):
+            # Create a copy of the graph for each trial
+            G = self.nx_graph.copy()
+            G.remove_edges_from(edges)
 
-            # Try removing sets of three edges
-            for edges in combinations(sorted_edges, 3):
-                # Create a copy of the graph for each trial
-                G = G_original.copy()
-                G.remove_edges_from(edges)
+            # Check if the graph is now disconnected into two components of specific sizes
+            if nx.is_connected(G):
+                continue
 
-                # Check if the graph is now disconnected into two components of specific sizes
-                if nx.is_connected(G):
-                    continue
+            components = list(nx.connected_components(G))
+            if len(components) == 2:
+                return len(components[0]) * len(components[1])
 
-                components = list(nx.connected_components(G))
-                if len(components) == 2:
-                    return len(components[0]) * len(components[1])
-
-            return None
-
-        return find_edges_to_disconnect(G)
+        return None
 
 
 def snowverload(inp):
