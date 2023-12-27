@@ -7,6 +7,14 @@ import collections
 from utils.test_and_run import run, test
 
 
+def sum_2d(tuples_2d):
+    return tuple(sum(components) for components in zip(*tuples_2d))
+
+
+def multiply_2d(pos, coef):
+    return tuple([pos[i] * coef for i in range(len(pos))])
+
+
 class State:
     def __init__(self, inp, pos, step=0, path=None):
         self.inp = inp
@@ -33,6 +41,8 @@ class State:
 
         end_sym = self.inp[y2][x2]
         if end_sym == ".":
+            # return self. == 2
+            # TODO return self.part == 2
             return False
 
         if start is None:
@@ -178,25 +188,34 @@ class State:
 
 
 class PipeMaze:
-    def __init__(self, inp):
+    def __init__(self, inp, part):
         self._inp = inp
+        self._part = part
 
     def __repr__(self):
         return "\n".join(line for line in self._inp)
+
+    def is_dot(self, xy):
+        x, y = xy
+        return self._inp[y][x] == "."
 
     def _get_start_pos(self):
         for y, line in enumerate(self._inp):
             for x, elm in enumerate(line):
                 if elm == "S":
                     return x, y
+                    # if self._part == 1:
+                    #     return x, y
+                    # if self._part == 2:
+                    #     return x - 1, y
         raise ValueError(f"no start position in {self._inp}")
 
-    def get_steps_to_farthest_position(self, start_pos=None, step=None, path=None):
+    def get_steps_to_farthest_position(self, start_pos=None, step=None, path_coordinates=None):
         if not start_pos:
             start_pos = self._get_start_pos()
 
         all_pipes = {start_pos}
-        state = State(self._inp, start_pos, step, path)
+        state = State(self._inp, start_pos, step, path_coordinates)
         fringe = collections.deque([state])
 
         while fringe:
@@ -210,7 +229,6 @@ class PipeMaze:
                     for y, line in enumerate(self._inp):
                         for x, elm in enumerate(line):
                             if (x, y) in all_pipes:
-                                v = "X"
                                 v = elm
                                 match elm:
                                     case "|":
@@ -226,7 +244,42 @@ class PipeMaze:
                                     case "7":
                                         v = "┓"
                                 maze[y][x] = v
+                            else:
+                                assert maze[y][x] == "."
+                                maze[y][x] = "x"
                         print("".join(maze[y]))
+
+                    if self._part == 2:
+                        x, y = self._get_start_pos()
+                        path_coordinates = []
+                        res = 0
+                        for dx, dy in succ.path:
+                            x += dx
+                            y += dy
+                            path_coordinates.append((x, y))
+
+                        # looks like S is always an angle so we can define inner area as an area inside this angle
+                        first_and_last_steps = [succ.path[0], succ.path[-1]]
+                        # revert last step to show directions from start point as a vector
+                        start_vectors = first_and_last_steps[0], multiply_2d(first_and_last_steps[-1], -1)
+
+                        start_vector = sum_2d(start_vectors)
+
+                        visited = set([])
+                        if self.is_dot(start_vector):
+                            a = 0
+                            # TODO search for dots in all directions until you reach border
+
+                        return res
+
+                    if self._part == 2:
+                        res = 0
+                        for i, (x, y) in enumerate(path_coordinates):
+                            action = succ.path[i]
+                            if self._inp[y][x] == ".":
+                               res += 1
+                        assert x, y == self._get_start_pos()  # make sure we end just where we start
+                        return res
 
                     return succ.step // 2
                 else:
@@ -235,18 +288,19 @@ class PipeMaze:
         raise ValueError("no solution to get_steps_to_farthest_position")
 
 
-def pipe_paze(inp, part=1, **kw):
-    if part == 2:
-        raise NotImplemented
-    return PipeMaze(inp).get_steps_to_farthest_position()
+def pipe_maze(inp, part=1, **kw):
+    return PipeMaze(inp, part).get_steps_to_farthest_position()
 
 
 if __name__ == "__main__":
-    test(pipe_paze, 4)
-    test(pipe_paze, test_part=2, expected=8)
-    run(pipe_paze)
+    # test(pipe_maze, 4)
+    # test(pipe_maze, test_part=2, expected=8)
+    # run(pipe_maze)
+    #
+    # # not implemented - visual solving
+    # test(pipe_maze, part=2, test_part=3, expected=4)
+    # test(pipe_maze, part=2, test_part=4, expected=8)
+    # test(pipe_maze, part=2, test_part=5, expected=10)
+    assert run(pipe_maze, part=2) == 451
 
-    # not implemented - visual solving
-    res = run(pipe_paze, part=2)
-    assert 433 < res < 437
-    # or res could be 451 .. 459? but not a big chance
+
