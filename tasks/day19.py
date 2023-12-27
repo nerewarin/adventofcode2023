@@ -22,6 +22,7 @@ class Workflow:
     name: str
     clauses: list[Clause]
     fallback: str
+    workflow_by_name: dict[str, "Workflow"] = None
 
     @classmethod
     def from_line(cls, line):
@@ -56,6 +57,53 @@ class Workflow:
                 return clause.output
         return self.fallback
 
+    def _add_clause(self, existing, new, operator):
+        # adds new clause to existing using and/or operator
+        if not existing:
+            return new
+
+        a = 0
+
+    def get_acceptance_clause(self):
+        comparator_to_str = {
+            gt: ">",
+            lt: "<",
+        }
+
+        full_acceptance_clause = ""
+        next_operator = None
+        for clause in self.clauses:
+
+            attr = clause.attr
+            comparator_str = comparator_to_str[clause.comparator]
+            arg = clause.arg
+            clause_str = f"part[{attr!r}] {comparator_str} {arg}"
+
+            if clause.output == "A":
+                full_acceptance_clause = self._add_clause(full_acceptance_clause, clause_str, next_operator)
+                next_operator = "or"
+            elif clause.output == "R":
+                clause_str = f"not {clause_str}"
+                full_acceptance_clause = self._add_clause(full_acceptance_clause, clause_str, next_operator)
+                next_operator = "or"
+            else:
+                acceptance = "and " + self.workflow_by_name[clause.output].get_acceptance_clause()
+
+            a = 0
+
+        # add fallback
+        if self.fallback == "R":
+            a = 0
+            pass
+        elif self.fallback == "A":
+            a = 0
+            pass
+        else:
+            w_fallback = self.workflow_by_name[self.fallback]
+            fallback_clause_str = w_fallback.get_acceptance_clause()
+            full_acceptance_clause = self._add_clause(full_acceptance_clause, fallback_clause_str, next_operator)
+
+        return full_acceptance_clause
 
 class Part(dict):
     @classmethod
@@ -72,6 +120,12 @@ class Aplenty:
     def __init__(self, inp):
         self.raw_inp = inp
         self.workflows, self.parts = self._parse_input(inp)
+
+        self.workflow_by_name = {
+            w.name: w for w in self.workflows
+        }
+        for w in self.workflows:
+            w.workflow_by_name = self.workflow_by_name
 
     @staticmethod
     def _parse_input(inp):
@@ -92,14 +146,11 @@ class Aplenty:
 
     def get_sum_of_accepted_parts_ratings(self):
         accepted_parts = []
-        workflow_by_name = {
-            w.name: w for w in self.workflows
-        }
 
         for part in self.parts:
             w_name = "in"
             while True:
-                w = workflow_by_name[w_name]
+                w = self.workflow_by_name[w_name]
 
                 w_res = w.run(part)
                 match w_res:
@@ -118,11 +169,20 @@ class Aplenty:
 
         return sum(ratings)
 
+    def get_distinct_combinations_of_accepted_ratings(self):
+        for w in self.workflows:
+            clauses = w.get_acceptance_clause()
+            a = 0
 
-def aplenty(inp, **kw):
-    return Aplenty(inp).get_sum_of_accepted_parts_ratings()
+def aplenty(inp, part=1, **kw):
+    if part == 1:
+        return Aplenty(inp).get_sum_of_accepted_parts_ratings()
+    Aplenty(inp).get_distinct_combinations_of_accepted_ratings()
 
 
 if __name__ == "__main__":
     test(aplenty, 19114)
-    res = run(aplenty)
+    assert run(aplenty) == 487623
+
+    test(aplenty, part=2, expected=167409079868000)
+    run(aplenty, part=2)
