@@ -2,8 +2,10 @@
 --- Day 20: Pulse Propagation ---
 https://adventofcode.com/2023/day/20
 """
+import collections
 from collections import deque
 from functools import partial
+from math import lcm
 from typing import List, Callable, cast
 
 from utils.test_and_run import run, test
@@ -76,10 +78,13 @@ class Module:
         return f"{self.__class__.__qualname__}(name={self.name!r}, dst={self.destinations}), pulses={self.pulses_sent[0]} / {self.pulses_sent[1]}"
 
     def add_input(self, module: "Module"):
-        self.inputs.append(module.name)
+        self.inputs.append(module)
 
     def receive(self, src, pulse) -> List[Callable]:
         raise NotImplemented
+
+    def is_final_con(self):
+        return "rx" in self.destinations
 
     def send(self, pulse):
         # register future actions
@@ -204,6 +209,8 @@ class PulsePropagation:
         schema = deque()
         self.schema = schema
 
+        self.end_module2step_of_high_pulse = collections.defaultdict(list)
+
     @property
     def btn(self):
         btn = self._modules[0]
@@ -264,7 +271,7 @@ class PulsePropagation:
 
         return
 
-    def propagate_btn_push(self, to_print=False):
+    def propagate_btn_push(self, to_print=False, step=None):
         low_pulses = 0
         high_pulses = 0
 
@@ -296,9 +303,18 @@ class PulsePropagation:
                     (new_act, new_printable)
                 )
                 printables.append(new_printable)
+
+                if new_printable.endswith("zr") and "high" in new_printable:
+                    src = new_printable.split()[0]
+                    self.end_module2step_of_high_pulse[src].append(step)
+
+                    print(f"{step}: {new_printable}")
+
                 if to_print:
                     print(new_printable)
-
+            #
+            # if dst.is_final_con() and pulse:
+            #     print(dst_name)
         return low_pulses, high_pulses, printables
 
     def propagate_n_times(self, n):
@@ -336,7 +352,7 @@ def get_fewest_number_of_button_presses(inp, **kw):
 
     while not rx.low_pulses_received:
         i += 1
-        pp.propagate_btn_push(to_print=i == 1)
+        pp.propagate_btn_push(to_print=i == 1, step=i)
         rx: RX = cast(RX, Modules.get("rx"))
 
         if not i % 10e6:
@@ -351,4 +367,51 @@ if __name__ == "__main__":
     # )
     # assert run(propagate_n_times) == 670984704  # for my 20/run.txt only
 
-    run(get_fewest_number_of_button_presses)
+    # run(get_fewest_number_of_button_presses)
+
+
+    def verify_sequence(lst):
+        if not lst:
+            return False
+
+        first_element = lst[0]
+        for i in range(1, len(lst)):
+            expected = first_element * (i + 1)
+            if lst[i] != expected:
+                return False
+        return True
+
+
+    def verify_sequence(lst):
+        if not lst:
+            return False
+
+        first_element = lst[0]
+        for i in range(1, len(lst)):
+            expected = first_element * (i + 1)
+            if lst[i] != expected:
+                return False
+        return True
+
+
+    # Example usage:
+    gc = [3853, 7706, 11559, 15412, 19265, 23118, 26971, 30824]
+    xf = [4073, 8146, 12219, 16292, 20365, 24438, 28511, 32584]
+    cm = [4091, 8182, 12273, 16364, 20455, 24546, 28637, 32728]
+    sz = [4093, 8186, 12279, 16372, 20465, 24558, 28651, 32744]
+
+    print("gc:", verify_sequence(gc))
+    print("xf:", verify_sequence(xf))
+    print("cm:", verify_sequence(cm))
+    print("sz:", verify_sequence(sz))
+
+    a = 0
+
+    import math
+
+
+
+
+    # Example usage:
+    elms = [l[0] for l in (gc, xf, cm, sz)]
+    print(lcm(*elms))
