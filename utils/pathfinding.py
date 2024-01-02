@@ -1,4 +1,5 @@
 import heapq
+from collections import defaultdict
 
 
 def manhattan_distance(point1, point2):
@@ -50,12 +51,13 @@ class PriorityQueue:
 class Node:
     """A node class for A* Pathfinding"""
 
-    def __init__(self, parent=None, position=None, signal=0, closest_signal_in=0, closest_signal_pos_from_end=0):
+    def __init__(self, parent=None, position=None, signal=0, closest_signal_in=0, closest_signal_pos_from_end=0, path=None):
         self.parent = parent
         self.position = position
         self.signal = signal
         self.closest_signal_in = closest_signal_in
         self.closest_signal_pos_from_end = closest_signal_pos_from_end
+        self.path = path or []
 
         """
         F is the total cost of the node.
@@ -95,13 +97,15 @@ def get_signal(maze, pos):
     return maze[pos[0]][pos[1]]
 
 
-def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
+def astar(maze, start, end, allow_diagonal=True, signal_limit=None, get_signal_func=None, max_blocks_in_a_single_direction=None):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
+    if get_signal_func is None:
+        get_signal_func = get_signal
 
     # Create start and end node
-    start_node = Node(None, start, signal=get_signal(maze, start))
+    start_node = Node(None, start, signal=get_signal_func(maze, start))
     start_node.g = start_node.h = start_node.f = 0
-    end_node = Node(None, end, signal=get_signal(maze, end))
+    end_node = Node(None, end, signal=get_signal_func(maze, end))
     end_node.g = end_node.h = end_node.f = 0
 
     # Initialize both open and closed list
@@ -123,28 +127,7 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
         #         current_node = item
         #         current_index = index
 
-        maze_str = [[chr(x + 96) for x in list(line)] for line in maze]
-        for node_ in open_list:
-            # maze_str[node_.position[0]][node_.position[1]] = " "
-            v = maze_str[node_.position[0]][node_.position[1]]
-            # if ord('a') <= ord(v) <= ord('z'):
-            #     v = chr(ord(v) - 32)
-            #     maze_str[node_.position[0]][node_.position[1]] = v
-            maze_str[node_.position[0]][node_.position[1]] = " "
-
-        for position in closed_list:
-            maze_str[position[0]][position[1]] = "."
-        maze_str[current_node.position[0]][current_node.position[1]] = "*"
-
-        cycle += 1
-        if not cycle % 1000:
-            print()
-            for i, line in enumerate(maze_str):
-                s = "".join(line)
-                print(s)
-            # print(f"{cycle=}: {current_node=}")
-            print(cycle, ": current_node", current_node)
-            print()
+        cycle, maze_str = print_maze(closed_list, current_node, cycle, maze, open_list)
 
         # Pop current off open list, add to closed list
         # open_list.pop(current_index)
@@ -180,6 +163,7 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
         if allow_diagonal:
             adjacent_squares += [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 
+
         for new_position in adjacent_squares:  # Adjacent squares
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
@@ -188,10 +172,16 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
             if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
                 continue
 
+            if max_blocks_in_a_single_direction:
+                _last = current_node.path[:max_blocks_in_a_single_direction - 1] + [new_position]
+                if len(_last) == max_blocks_in_a_single_direction and set(_last) != 1:
+                    print(f"reached max_blocks_in_a_single_direction: {_last}")
+                    continue
+
             # Make sure walkable terrain
             # if maze[node_position[0]][node_position[1]] != 0:
             #     continue
-            new_signal = get_signal(maze, node_position)
+            new_signal = get_signal_func(maze, node_position)
             if signal_limit:
                 if new_signal > (current_node.signal + signal_limit):
                     continue
@@ -212,7 +202,7 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
                 closest_signal_pos = end
             closest_signal_pos_from_end = dist(closest_signal_pos, end)
 
-            new_node = Node(current_node, node_position, new_signal, closest_signal_in, closest_signal_pos_from_end)
+            new_node = Node(current_node, node_position, new_signal, closest_signal_in, closest_signal_pos_from_end, path=current_node.path + [new_position])
 
             # Append
             children.append(new_node)
@@ -254,6 +244,33 @@ def astar(maze, start, end, allow_diagonal=True, signal_limit = None):
 
             # Add the child to the open list
             open_list.append(child)
+
+        raise ValueError
+
+
+def print_maze(closed_list, current_node, cycle, maze, open_list):
+    maze_str = [[chr(x + 96) for x in list(line)] for line in maze]
+    for node_ in open_list:
+        # maze_str[node_.position[0]][node_.position[1]] = " "
+        v = maze_str[node_.position[0]][node_.position[1]]
+        # if ord('a') <= ord(v) <= ord('z'):
+        #     v = chr(ord(v) - 32)
+        #     maze_str[node_.position[0]][node_.position[1]] = v
+        maze_str[node_.position[0]][node_.position[1]] = " "
+    for position in closed_list:
+        maze_str[position[0]][position[1]] = "."
+    maze_str[current_node.position[0]][current_node.position[1]] = "*"
+    cycle += 1
+    if not cycle % 1000:
+        print()
+        for i, line in enumerate(maze_str):
+            s = "".join(line)
+            print(s)
+        # print(f"{cycle=}: {current_node=}")
+        print(cycle, ": current_node", current_node)
+        print()
+    return cycle, maze_str
+
 
 def nullHeuristic(state, problem=None):
     """
@@ -299,6 +316,7 @@ def uniformCostSearch(problem):
     else:
         return []
 
+
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
@@ -308,35 +326,79 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     fringe = PriorityQueue()
     pushed = set([])
     best_cost = {}
+    best_path = {}
+    last3steps = defaultdict(set)
+
     for state, action, cost in start_successors:
         moving = state, action, cost
         score = cost + heuristic(state, problem)
         fringe.push((state, [action], cost), score)
-        best_cost[state] = score
+        best_cost[state.pos] = score
         pushed.add(moving)
-    closed = [start_state]
+
+    closed = [start_state.pos]
+
+    for_debug = set([start_state.pos])
 
     while not fringe.isEmpty():
         moving = fringe.pop()
         state, path, cost = moving
+        state_pos = state.pos
 
         if problem.isGoalState(state):
-            return path
+            # TODO del this shit start
+            loss = 0
+            x, y = start_state.x, start_state.y
+            path_str = []
+            for i, (dx, dy) in enumerate(state.path):
+                x, y = x + dx, y + dy
+
+                loss_ = problem.inp[y][x]
+                loss += loss_
+                path_str.append(f"{i + 1}. ({x}, {y}) = {loss_}, {loss=}")
+            if loss < 985 and loss != 981 and loss not in range(957, 960):
+                # TODO del this shit end. left only return path
+                for p in path_str:
+                    print(p)
+                return path
+            else:
+                print(f"Found path loss of {loss}")
+                continue
 
         closed.append(state)
+        if state.pos in for_debug:
+            a = 0
+
         if state not in successors.keys():
             successors[state] = problem.getSuccessors(state)
 
         for child in successors[state]:
             child_state, child_action, child_cost = child
+            child_path = child_state.path
 
             full_cost = cost + child_cost
-            score = full_cost + heuristic(child_state, problem)
+            h = heuristic(child_state, problem)
+            score = full_cost + h
 
-            if (child_state not in closed) and (child not in pushed):
-                best_cost[child_state] = score
-                fringe.push((child_state, path + [child_action], full_cost), score)
-                pushed.add(child)
+            child_pos = child_state.pos
+
+            if (child_pos not in closed) and (child not in pushed):
+                is_best_cost = child_pos not in best_cost or score <= best_cost[child_pos]
+
+                # just for 2023/day17: give a chance to path with fresh direction (last action was turn)
+                # last_action_is_turn = len(child_path) > 1 and child_state.path[-1] != child_state.path[-2]
+                last_action_is_turn = False
+                last_three_actions = tuple(child_state.path[-3:])
+
+                if is_best_cost or last_action_is_turn or last_three_actions not in last3steps[child_pos]:
+                    if is_best_cost:
+                        best_cost[child_pos] = score
+
+                    last3steps[child_pos].add(last_three_actions)
+
+                    best_path[child_pos] = child_state.path_str
+                    fringe.push((child_state, path + [child_action], full_cost), score)
+                    pushed.add(child)
     else:
         return []
 
