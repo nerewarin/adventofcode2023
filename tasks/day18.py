@@ -1,6 +1,6 @@
 """
---- Day 19: Aplenty  ---
-https://adventofcode.com/2023/day/19
+--- Day 18: Lavaduct Lagoon ---
+https://adventofcode.com/2023/day/18
 """
 import dataclasses
 from copy import deepcopy
@@ -88,9 +88,6 @@ class Workflow:
 
     def _merge(self, constraints_orig, constraints2, operator):
         assert operator in ("and", "or")
-
-        if constraints2 == constraints_orig:
-            return constraints_orig
 
         constraints = deepcopy(constraints_orig)
         if operator == "or":
