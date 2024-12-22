@@ -3,7 +3,7 @@ import inspect
 import re
 
 _TASK_NUM_FROM_FILE_REGEXP = re.compile("(?:day)?(\d+)")
-_INPUTS_ROOT = pathlib.Path("./../inputs")
+_INPUTS_ROOT = pathlib.Path("./../inputs").resolve()
 
 
 def _get_resources_dir():
